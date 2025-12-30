@@ -906,9 +906,448 @@ export async function sendSettlementRequest({
 
 ---
 
-## Implementation Order
+## Senior Engineer Development Workflow
 
-### Phase 1: Foundation
+**CRITICAL**: Follow this workflow for EVERY feature. Do NOT skip steps. Do NOT move to the next feature until ALL tests pass.
+
+### Workflow Overview
+
+```
+┌─────────────────────────────────────────────────────────────────────────────┐
+│                    FEATURE DEVELOPMENT LIFECYCLE                            │
+├─────────────────────────────────────────────────────────────────────────────┤
+│                                                                             │
+│  1. PLAN          2. BRANCH         3. DEVELOP        4. TEST              │
+│  ┌─────────┐      ┌─────────┐       ┌─────────┐       ┌─────────┐          │
+│  │ Analyze │ ───► │ Create  │ ───►  │ Write   │ ───►  │ Run ALL │          │
+│  │ Feature │      │ Branch  │       │ Code +  │       │ Tests   │          │
+│  │ Scope   │      │ + PR    │       │ Tests   │       │         │          │
+│  └─────────┘      └─────────┘       └─────────┘       └────┬────┘          │
+│                                                            │               │
+│                                                            ▼               │
+│                                                     ┌─────────────┐        │
+│                                                     │ All Pass?   │        │
+│                                                     └──────┬──────┘        │
+│                                                            │               │
+│                              ┌──────────────────┬──────────┴────────┐      │
+│                              │                  │                   │      │
+│                              ▼ NO               ▼ YES               │      │
+│                        ┌─────────┐        ┌─────────┐               │      │
+│                        │ Fix     │        │ Push &  │               │      │
+│                        │ Issues  │───────►│ Merge   │               │      │
+│                        └─────────┘        └────┬────┘               │      │
+│                                                │                    │      │
+│                                                ▼                    │      │
+│                                         ┌───────────┐               │      │
+│                                         │ NEXT      │◄──────────────┘      │
+│                                         │ FEATURE   │                      │
+│                                         └───────────┘                      │
+│                                                                             │
+└─────────────────────────────────────────────────────────────────────────────┘
+```
+
+---
+
+### Step 1: Plan the Feature
+
+Before writing ANY code:
+
+1. **Understand the requirement**
+   - What problem does this solve?
+   - What are the acceptance criteria?
+   - What edge cases exist?
+
+2. **Break down into tasks**
+   - Use TodoWrite to create actionable items
+   - Each task should be small (< 2 hours of work)
+   - Include test tasks explicitly
+
+3. **Identify dependencies**
+   - What existing code will be modified?
+   - What new files need to be created?
+   - What database changes are needed?
+
+---
+
+### Step 2: Create Branch & PR (Draft)
+
+```bash
+# Create feature branch from main
+git checkout main
+git pull origin main
+git checkout -b feature/[feature-name]
+
+# Example branch names:
+# feature/user-authentication
+# feature/transaction-crud
+# feature/spending-groups
+# fix/currency-conversion-bug
+# chore/update-dependencies
+```
+
+**Create Draft PR immediately** (before any code):
+- Title: `feat: [Feature Name]`
+- Body: Summary of what will be implemented
+- Mark as Draft
+- This enables early visibility and feedback
+
+---
+
+### Step 3: Develop with Tests (TDD Approach)
+
+**CRITICAL**: Write tests ALONGSIDE code, not after.
+
+#### 3.1 Database Changes (if needed)
+
+```bash
+# 1. Update Drizzle schema
+# 2. Generate migration
+bun run db:generate
+
+# 3. Apply migration
+bun run db:migrate
+
+# 4. Verify in Drizzle Studio
+bun run db:studio
+```
+
+#### 3.2 Backend Development
+
+For EACH backend component:
+
+| Component | What to Write | Test File |
+|-----------|---------------|-----------|
+| Service | Business logic | `*.service.test.ts` |
+| Route | API endpoint | `*.test.ts` (integration) |
+| Middleware | Auth, validation | `*.test.ts` |
+| Utility | Helper functions | `*.test.ts` |
+
+```typescript
+// EXAMPLE: Writing a service with tests
+
+// 1. Write the test FIRST (or alongside)
+// src/api/services/transaction.service.test.ts
+describe('TransactionService', () => {
+  it('should create a transaction', async () => {
+    // Test implementation
+  });
+
+  it('should validate amount is positive', async () => {
+    // Test validation
+  });
+
+  it('should convert currency when needed', async () => {
+    // Test business logic
+  });
+});
+
+// 2. Implement the service
+// src/api/services/transaction.service.ts
+export class TransactionService {
+  async create(data: CreateTransactionInput) {
+    // Implementation
+  }
+}
+
+// 3. Run tests immediately
+// bun test src/api/services/transaction.service.test.ts
+```
+
+#### 3.3 Frontend Development
+
+For EACH frontend component:
+
+| Component | What to Write | Test File |
+|-----------|---------------|-----------|
+| UI Component | React component | `*.test.tsx` (RTL) |
+| Hook | Custom hook | `*.test.ts` |
+| Page | Route component | `*.test.tsx` + E2E |
+| Form | Form component | `*.test.tsx` |
+
+```typescript
+// EXAMPLE: Writing a component with tests
+
+// 1. Write component test
+// src/features/transactions/components/TransactionForm.test.tsx
+describe('TransactionForm', () => {
+  it('should render all form fields', () => {
+    render(<TransactionForm onSubmit={vi.fn()} />);
+    expect(screen.getByLabelText(/amount/i)).toBeInTheDocument();
+  });
+
+  it('should show validation errors', async () => {
+    // Test validation UI
+  });
+
+  it('should submit valid data', async () => {
+    // Test submission
+  });
+});
+
+// 2. Implement the component
+// src/features/transactions/components/TransactionForm.tsx
+export function TransactionForm({ onSubmit }: Props) {
+  // Implementation with data-testid attributes
+}
+
+// 3. Run tests immediately
+// bun run test:frontend src/features/transactions/components/TransactionForm.test.tsx
+```
+
+**IMPORTANT**: Always add `data-testid` attributes for E2E testing:
+```tsx
+<input data-testid="amount-input" />
+<button data-testid="submit-button">Save</button>
+<div data-testid="error-message">{error}</div>
+```
+
+---
+
+### Step 4: Run ALL Tests
+
+**MANDATORY before pushing. NO EXCEPTIONS.**
+
+#### 4.1 Backend Tests
+
+```bash
+# Unit tests (services, utilities)
+bun test
+
+# With coverage (must be 80%+)
+bun test --coverage
+
+# Integration tests (API routes)
+bun run test:integration
+```
+
+#### 4.2 Frontend Tests
+
+```bash
+# Component tests (Vitest + RTL)
+bun run test:frontend
+
+# With coverage (must be 70%+)
+bun run test:frontend:coverage
+```
+
+#### 4.3 E2E Tests (Playwright + Chromium)
+
+```bash
+# Install Playwright if not done
+bunx playwright install chromium
+
+# Run E2E tests
+bun run test:e2e
+
+# Debug failing tests
+bun run test:e2e:ui      # Interactive UI
+bun run test:e2e:headed  # See browser
+bun run test:e2e:debug   # Step through
+```
+
+#### 4.4 Linting & Type Checking
+
+```bash
+# ESLint
+bun run lint
+
+# TypeScript
+bun run typecheck
+```
+
+#### 4.5 Full Test Suite (Pre-Push)
+
+```bash
+# Run EVERYTHING before pushing
+bun run test:prepush
+```
+
+This runs in order:
+1. `bun run lint` - ESLint
+2. `bun run typecheck` - TypeScript
+3. `bun test` - Backend unit tests
+4. `bun run test:integration` - API tests
+5. `bun run test:frontend` - Frontend tests
+6. `bun run test:e2e` - E2E tests
+
+---
+
+### Step 5: Fix Issues (If Tests Fail)
+
+**DO NOT SKIP OR IGNORE FAILING TESTS**
+
+1. **Identify the failure**
+   - Read the error message carefully
+   - Check which test file failed
+   - Look at the stack trace
+
+2. **Debug the issue**
+   ```bash
+   # For backend tests
+   bun test --watch src/api/services/failing.service.test.ts
+
+   # For frontend tests
+   bun run test:frontend:watch src/features/failing/Component.test.tsx
+
+   # For E2E tests
+   bun run test:e2e:debug src/tests/e2e/failing.spec.ts
+   ```
+
+3. **Fix the code (not the test)**
+   - The test defines expected behavior
+   - Fix the implementation to match
+   - Only fix the test if the test itself is wrong
+
+4. **Re-run ALL tests**
+   - A fix might break something else
+   - Always run full suite before pushing
+
+---
+
+### Step 6: Push & Merge
+
+**Only after ALL tests pass:**
+
+```bash
+# Stage changes
+git add .
+
+# Commit with conventional commit message
+git commit -m "feat: add transaction CRUD functionality
+
+- Add TransactionService with create, read, update, delete
+- Add API routes for /api/transactions
+- Add TransactionForm component with validation
+- Add TransactionList with filtering
+- Add E2E tests for transaction flows
+- 85% test coverage achieved"
+
+# Push to remote
+git push origin feature/[feature-name]
+
+# Mark PR as ready for review (if draft)
+# Merge after CI passes
+```
+
+---
+
+### Step 7: Move to Next Feature
+
+**ONLY after merge is complete:**
+
+1. **Update local main**
+   ```bash
+   git checkout main
+   git pull origin main
+   ```
+
+2. **Mark feature as complete in TodoWrite**
+
+3. **Start Step 1 for next feature**
+
+---
+
+### Test Coverage Requirements
+
+| Category | Minimum Coverage | Target |
+|----------|------------------|--------|
+| Backend Services | 80% | 90% |
+| Backend Routes | 70% | 80% |
+| Frontend Components | 70% | 80% |
+| Critical Flows (E2E) | 100% | 100% |
+
+**Critical flows that MUST have E2E tests:**
+- [ ] User registration
+- [ ] User login/logout
+- [ ] Add transaction
+- [ ] Edit transaction
+- [ ] Delete transaction
+- [ ] View dashboard
+- [ ] Create spending group
+- [ ] Invite user to group
+- [ ] Accept/decline invitation
+- [ ] Split expense
+- [ ] Settle up
+
+---
+
+### Checklist Per Feature
+
+Use this checklist for EVERY feature:
+
+```markdown
+## Feature: [Name]
+
+### Planning
+- [ ] Requirements understood
+- [ ] Tasks broken down in TodoWrite
+- [ ] Dependencies identified
+
+### Branch & PR
+- [ ] Branch created from main
+- [ ] Draft PR opened
+
+### Backend (if applicable)
+- [ ] Database schema updated
+- [ ] Migrations generated and applied
+- [ ] Service created with unit tests
+- [ ] Routes created with integration tests
+- [ ] All backend tests passing
+
+### Frontend (if applicable)
+- [ ] Components created with tests
+- [ ] data-testid attributes added
+- [ ] Hooks created with tests
+- [ ] Pages/routes created
+- [ ] All frontend tests passing
+
+### E2E Tests
+- [ ] Happy path tested
+- [ ] Error cases tested
+- [ ] Edge cases tested
+- [ ] All E2E tests passing
+
+### Final Checks
+- [ ] bun run lint ✅
+- [ ] bun run typecheck ✅
+- [ ] bun test ✅
+- [ ] bun run test:frontend ✅
+- [ ] bun run test:e2e ✅
+- [ ] bun run test:prepush ✅
+
+### Merge
+- [ ] PR marked ready
+- [ ] CI pipeline passed
+- [ ] PR merged to main
+- [ ] Local main updated
+```
+
+---
+
+### Anti-Patterns to AVOID
+
+❌ **DO NOT**:
+- Skip writing tests "to save time"
+- Push code with failing tests
+- Merge without running full test suite
+- Write tests after the feature is "done"
+- Ignore E2E tests for UI changes
+- Skip the draft PR step
+- Work on multiple features at once
+- Merge to main without CI passing
+
+✅ **DO**:
+- Write tests alongside code (TDD)
+- Run tests frequently (after each change)
+- Fix issues immediately when found
+- Keep PRs focused and small
+- Complete one feature before starting another
+- Use TodoWrite to track progress
+- Ask for code review on complex changes
+
+---
+
+## Implementation Order
 1. Initialize project with Bun + Vite + React
 2. Set up Hono.js backend with Zod validation
 3. Configure Supabase + Drizzle ORM
