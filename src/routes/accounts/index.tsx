@@ -6,9 +6,9 @@ import {
   Building2,
   PiggyBank,
   Wallet,
-  MoreVertical,
   TrendingUp,
   TrendingDown,
+  MoreHorizontal,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
@@ -42,52 +42,31 @@ export const Route = createFileRoute("/accounts/")({
   component: AccountsPage,
 });
 
-// Mock data - replace with real API data
-const accounts = [
-  {
-    id: "1",
-    name: "Main Account",
-    type: "checking",
-    balance: 5420.5,
-    institution: "Barclays",
-    lastUpdated: new Date(),
-    monthlyChange: 350,
-  },
-  {
-    id: "2",
-    name: "Credit Card",
-    type: "credit",
-    balance: -1250.0,
-    institution: "HSBC",
-    lastUpdated: new Date(),
-    monthlyChange: -200,
-  },
-  {
-    id: "3",
-    name: "Savings Account",
-    type: "savings",
-    balance: 8500.0,
-    institution: "Nationwide",
-    lastUpdated: new Date(),
-    monthlyChange: 500,
-  },
-  {
-    id: "4",
-    name: "Emergency Fund",
-    type: "savings",
-    balance: 3000.0,
-    institution: "Marcus",
-    lastUpdated: new Date(),
-    monthlyChange: 200,
-  },
+const accountTypes = [
+  { value: "bank", label: "Bank Account", icon: Building2, color: "from-blue-500/20 to-blue-600/10" },
+  { value: "credit_card", label: "Credit Card", icon: CreditCard, color: "from-purple-500/20 to-purple-600/10" },
+  { value: "cash", label: "Cash", icon: Wallet, color: "from-emerald-500/20 to-emerald-600/10" },
+  { value: "ewallet", label: "E-Wallet", icon: PiggyBank, color: "from-amber-500/20 to-amber-600/10" },
 ];
 
-const accountTypes = [
-  { value: "checking", label: "Checking Account", icon: Building2 },
-  { value: "savings", label: "Savings Account", icon: PiggyBank },
-  { value: "credit", label: "Credit Card", icon: CreditCard },
-  { value: "cash", label: "Cash", icon: Wallet },
-];
+// Empty state component
+function EmptyState({ onAdd }: { onAdd: () => void }) {
+  return (
+    <div className="empty-state py-20">
+      <div className="empty-state-icon">
+        <Wallet className="h-12 w-12 text-primary" />
+      </div>
+      <h3 className="text-2xl font-bold">No accounts yet</h3>
+      <p className="text-muted-foreground mt-2 max-w-md">
+        Add your bank accounts, credit cards, or cash to start tracking your finances.
+      </p>
+      <Button size="lg" className="mt-6 rounded-xl gradient-bg hover:opacity-90 gap-2 shadow-lg" onClick={onAdd}>
+        <Plus className="h-5 w-5" />
+        Add Your First Account
+      </Button>
+    </div>
+  );
+}
 
 function AccountsPage() {
   const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
@@ -95,8 +74,18 @@ function AccountsPage() {
     name: "",
     type: "",
     balance: "",
-    institution: "",
+    currency: "GBP",
   });
+
+  // TODO: Replace with actual API data
+  const accounts: Array<{
+    id: string;
+    name: string;
+    type: string;
+    balance: number;
+    currency: string;
+    isActive: boolean;
+  }> = [];
 
   const totalBalance = accounts.reduce((sum, acc) => sum + acc.balance, 0);
   const totalAssets = accounts
@@ -106,51 +95,54 @@ function AccountsPage() {
     .filter((acc) => acc.balance < 0)
     .reduce((sum, acc) => sum + Math.abs(acc.balance), 0);
 
-  const getAccountIcon = (type: string) => {
-    const accountType = accountTypes.find((t) => t.value === type);
-    return accountType?.icon || Wallet;
+  const getAccountType = (type: string) => {
+    return accountTypes.find((t) => t.value === type) || accountTypes[0];
   };
 
   const handleAddAccount = () => {
     // TODO: Implement add account functionality
     console.log("Adding account:", newAccount);
     setIsAddDialogOpen(false);
-    setNewAccount({ name: "", type: "", balance: "", institution: "" });
+    setNewAccount({ name: "", type: "", balance: "", currency: "GBP" });
   };
 
+  const hasAccounts = accounts.length > 0;
+
   return (
-    <div className="space-y-6">
-      <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+    <div className="space-y-8">
+      {/* Header */}
+      <div className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
         <div>
-          <h1 className="text-3xl font-bold tracking-tight">Accounts</h1>
-          <p className="text-muted-foreground">
+          <h1 className="text-3xl md:text-4xl font-bold tracking-tight">Accounts</h1>
+          <p className="text-muted-foreground text-lg mt-1">
             Manage your financial accounts
           </p>
         </div>
         <Dialog open={isAddDialogOpen} onOpenChange={setIsAddDialogOpen}>
           <DialogTrigger asChild>
-            <Button>
-              <Plus className="mr-2 h-4 w-4" />
+            <Button className="rounded-xl gradient-bg hover:opacity-90 gap-2 shadow-lg h-11">
+              <Plus className="h-5 w-5" />
               Add Account
             </Button>
           </DialogTrigger>
-          <DialogContent>
+          <DialogContent className="sm:max-w-[425px]">
             <DialogHeader>
-              <DialogTitle>Add New Account</DialogTitle>
+              <DialogTitle className="text-xl">Add New Account</DialogTitle>
               <DialogDescription>
                 Add a new financial account to track your finances
               </DialogDescription>
             </DialogHeader>
-            <div className="space-y-4 py-4">
+            <div className="space-y-5 py-4">
               <div className="space-y-2">
                 <Label htmlFor="name">Account Name</Label>
                 <Input
                   id="name"
-                  placeholder="e.g., Main Checking Account"
+                  placeholder="e.g., Monzo Current Account"
                   value={newAccount.name}
                   onChange={(e) =>
                     setNewAccount({ ...newAccount, name: e.target.value })
                   }
+                  className="h-11 rounded-xl"
                 />
               </div>
               <div className="space-y-2">
@@ -161,13 +153,13 @@ function AccountsPage() {
                     setNewAccount({ ...newAccount, type: value })
                   }
                 >
-                  <SelectTrigger>
+                  <SelectTrigger className="h-11 rounded-xl">
                     <SelectValue placeholder="Select account type" />
                   </SelectTrigger>
                   <SelectContent>
                     {accountTypes.map((type) => (
                       <SelectItem key={type.value} value={type.value}>
-                        <div className="flex items-center gap-2">
+                        <div className="flex items-center gap-3">
                           <type.icon className="h-4 w-4" />
                           {type.label}
                         </div>
@@ -177,163 +169,187 @@ function AccountsPage() {
                 </Select>
               </div>
               <div className="space-y-2">
-                <Label htmlFor="balance">Current Balance</Label>
-                <div className="relative">
-                  <span className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground">
-                    GBP
-                  </span>
-                  <Input
-                    id="balance"
-                    type="number"
-                    step="0.01"
-                    placeholder="0.00"
-                    value={newAccount.balance}
-                    onChange={(e) =>
-                      setNewAccount({ ...newAccount, balance: e.target.value })
-                    }
-                    className="pl-14"
-                  />
-                </div>
+                <Label htmlFor="currency">Currency</Label>
+                <Select
+                  value={newAccount.currency}
+                  onValueChange={(value) =>
+                    setNewAccount({ ...newAccount, currency: value })
+                  }
+                >
+                  <SelectTrigger className="h-11 rounded-xl">
+                    <SelectValue placeholder="Select currency" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="GBP">GBP - British Pound</SelectItem>
+                    <SelectItem value="MYR">MYR - Malaysian Ringgit</SelectItem>
+                  </SelectContent>
+                </Select>
               </div>
               <div className="space-y-2">
-                <Label htmlFor="institution">Institution (Optional)</Label>
+                <Label htmlFor="balance">Current Balance</Label>
                 <Input
-                  id="institution"
-                  placeholder="e.g., Barclays, HSBC"
-                  value={newAccount.institution}
+                  id="balance"
+                  type="number"
+                  step="0.01"
+                  placeholder="0.00"
+                  value={newAccount.balance}
                   onChange={(e) =>
-                    setNewAccount({ ...newAccount, institution: e.target.value })
+                    setNewAccount({ ...newAccount, balance: e.target.value })
                   }
+                  className="h-11 rounded-xl currency"
                 />
               </div>
             </div>
-            <DialogFooter>
-              <Button variant="outline" onClick={() => setIsAddDialogOpen(false)}>
+            <DialogFooter className="gap-2">
+              <Button variant="outline" onClick={() => setIsAddDialogOpen(false)} className="rounded-xl">
                 Cancel
               </Button>
-              <Button onClick={handleAddAccount}>Add Account</Button>
+              <Button onClick={handleAddAccount} className="rounded-xl gradient-bg hover:opacity-90">
+                Add Account
+              </Button>
             </DialogFooter>
           </DialogContent>
         </Dialog>
       </div>
 
-      {/* Summary Cards */}
-      <div className="grid gap-4 md:grid-cols-3">
-        <Card>
-          <CardHeader className="pb-2">
-            <CardDescription>Net Worth</CardDescription>
-          </CardHeader>
-          <CardContent>
-            <div
-              className={cn(
-                "text-2xl font-bold",
-                totalBalance >= 0 ? "text-green-600" : "text-red-600"
-              )}
-            >
-              {formatCurrency(totalBalance)}
-            </div>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardHeader className="pb-2">
-            <CardDescription>Total Assets</CardDescription>
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold text-green-600">
-              {formatCurrency(totalAssets)}
-            </div>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardHeader className="pb-2">
-            <CardDescription>Total Liabilities</CardDescription>
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold text-red-600">
-              {formatCurrency(totalLiabilities)}
-            </div>
-          </CardContent>
-        </Card>
-      </div>
-
-      {/* Accounts List */}
-      <Card>
-        <CardHeader>
-          <CardTitle>All Accounts</CardTitle>
-          <CardDescription>
-            {accounts.length} account{accounts.length !== 1 ? "s" : ""} connected
-          </CardDescription>
-        </CardHeader>
-        <CardContent>
-          <div className="space-y-4">
-            {accounts.map((account) => {
-              const Icon = getAccountIcon(account.type);
-              return (
-                <div
-                  key={account.id}
-                  className="flex items-center justify-between rounded-lg border p-4 hover:bg-accent/50 transition-colors"
-                >
-                  <div className="flex items-center gap-4">
-                    <div
-                      className={cn(
-                        "flex h-12 w-12 items-center justify-center rounded-full",
-                        account.balance >= 0
-                          ? "bg-green-100 text-green-600 dark:bg-green-900/30 dark:text-green-400"
-                          : "bg-red-100 text-red-600 dark:bg-red-900/30 dark:text-red-400"
-                      )}
-                    >
-                      <Icon className="h-6 w-6" />
-                    </div>
-                    <div>
-                      <p className="font-medium">{account.name}</p>
-                      <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                        <span>{account.institution}</span>
-                        {account.institution && <span>-</span>}
-                        <span className="capitalize">{account.type}</span>
-                      </div>
+      {hasAccounts ? (
+        <>
+          {/* Summary Cards */}
+          <div className="grid gap-4 md:gap-6 md:grid-cols-3">
+            <Card className="relative overflow-hidden border-0 gradient-bg text-white">
+              <CardContent className="p-6">
+                <div className="flex items-start justify-between">
+                  <div>
+                    <p className="text-sm font-medium text-white/80">Net Worth</p>
+                    <p className="text-3xl font-bold mt-1 currency">
+                      {formatCurrency(totalBalance)}
+                    </p>
+                    <div className="flex items-center gap-1 mt-2 text-xs text-white/80">
+                      <TrendingUp className="h-3 w-3" />
+                      <span>+12.5% from last month</span>
                     </div>
                   </div>
-                  <div className="flex items-center gap-4">
-                    <div className="text-right">
-                      <p
-                        className={cn(
-                          "text-lg font-semibold",
-                          account.balance >= 0
-                            ? "text-foreground"
-                            : "text-red-600"
-                        )}
-                      >
-                        {formatCurrency(account.balance)}
-                      </p>
-                      <div
-                        className={cn(
-                          "flex items-center justify-end gap-1 text-sm",
-                          account.monthlyChange >= 0
-                            ? "text-green-600"
-                            : "text-red-600"
-                        )}
-                      >
-                        {account.monthlyChange >= 0 ? (
-                          <TrendingUp className="h-3 w-3" />
-                        ) : (
-                          <TrendingDown className="h-3 w-3" />
-                        )}
-                        <span>
-                          {account.monthlyChange >= 0 ? "+" : ""}
-                          {formatCurrency(account.monthlyChange)}
-                        </span>
-                      </div>
-                    </div>
-                    <Button variant="ghost" size="icon">
-                      <MoreVertical className="h-4 w-4" />
-                    </Button>
+                  <div className="h-12 w-12 rounded-xl bg-white/20 flex items-center justify-center">
+                    <Wallet className="h-6 w-6" />
                   </div>
                 </div>
-              );
-            })}
+              </CardContent>
+              <div className="absolute -top-24 -right-24 h-48 w-48 rounded-full bg-white/10 blur-2xl" />
+            </Card>
+
+            <Card className="relative overflow-hidden border-0 bg-gradient-to-br from-emerald-500/10 to-emerald-600/5 border-emerald-500/20">
+              <CardContent className="p-6">
+                <div className="flex items-start justify-between">
+                  <div>
+                    <p className="text-sm font-medium text-muted-foreground">Total Assets</p>
+                    <p className="text-3xl font-bold mt-1 text-emerald-500 currency">
+                      {formatCurrency(totalAssets)}
+                    </p>
+                    <p className="text-xs text-muted-foreground mt-2">
+                      {accounts.filter(a => a.balance > 0).length} accounts
+                    </p>
+                  </div>
+                  <div className="h-12 w-12 rounded-xl bg-emerald-500/20 flex items-center justify-center">
+                    <TrendingUp className="h-6 w-6 text-emerald-500" />
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+
+            <Card className="relative overflow-hidden border-0 bg-gradient-to-br from-rose-500/10 to-rose-600/5 border-rose-500/20">
+              <CardContent className="p-6">
+                <div className="flex items-start justify-between">
+                  <div>
+                    <p className="text-sm font-medium text-muted-foreground">Total Liabilities</p>
+                    <p className="text-3xl font-bold mt-1 text-rose-500 currency">
+                      {formatCurrency(totalLiabilities)}
+                    </p>
+                    <p className="text-xs text-muted-foreground mt-2">
+                      {accounts.filter(a => a.balance < 0).length} accounts
+                    </p>
+                  </div>
+                  <div className="h-12 w-12 rounded-xl bg-rose-500/20 flex items-center justify-center">
+                    <TrendingDown className="h-6 w-6 text-rose-500" />
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
           </div>
-        </CardContent>
-      </Card>
+
+          {/* Accounts List */}
+          <Card className="border-0 bg-card/50 backdrop-blur">
+            <CardHeader className="pb-4">
+              <CardTitle className="text-xl">All Accounts</CardTitle>
+              <CardDescription>
+                {accounts.length} account{accounts.length !== 1 ? "s" : ""} connected
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <div className="space-y-3">
+                {accounts.map((account, index) => {
+                  const accountType = getAccountType(account.type);
+                  const Icon = accountType.icon;
+                  return (
+                    <div
+                      key={account.id}
+                      className={cn(
+                        "flex items-center justify-between rounded-xl p-4 transition-all duration-200 hover-lift cursor-pointer fade-in-up",
+                        `bg-gradient-to-r ${accountType.color}`,
+                        `stagger-${index + 1}`
+                      )}
+                    >
+                      <div className="flex items-center gap-4">
+                        <div
+                          className={cn(
+                            "flex h-14 w-14 items-center justify-center rounded-xl",
+                            account.balance >= 0
+                              ? "bg-emerald-500/20 text-emerald-500"
+                              : "bg-rose-500/20 text-rose-500"
+                          )}
+                        >
+                          <Icon className="h-7 w-7" />
+                        </div>
+                        <div>
+                          <p className="font-semibold text-lg">{account.name}</p>
+                          <p className="text-sm text-muted-foreground capitalize">
+                            {account.type.replace("_", " ")} • {account.currency}
+                          </p>
+                        </div>
+                      </div>
+                      <div className="flex items-center gap-4">
+                        <div className="text-right">
+                          <p
+                            className={cn(
+                              "text-xl font-bold currency",
+                              account.balance >= 0
+                                ? "text-foreground"
+                                : "text-rose-500"
+                            )}
+                          >
+                            {formatCurrency(account.balance, account.currency)}
+                          </p>
+                          <p className="text-xs text-muted-foreground">
+                            {account.isActive ? "Active" : "Inactive"}
+                          </p>
+                        </div>
+                        <Button variant="ghost" size="icon" className="h-9 w-9 rounded-lg">
+                          <MoreHorizontal className="h-4 w-4" />
+                        </Button>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            </CardContent>
+          </Card>
+        </>
+      ) : (
+        <Card className="border-0 bg-card/50 backdrop-blur">
+          <CardContent>
+            <EmptyState onAdd={() => setIsAddDialogOpen(true)} />
+          </CardContent>
+        </Card>
+      )}
     </div>
   );
 }

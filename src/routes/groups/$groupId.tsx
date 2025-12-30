@@ -29,58 +29,49 @@ import {
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { cn, formatCurrency, formatDate } from "@/lib/utils";
+import { Users, Receipt } from "lucide-react";
 
 export const Route = createFileRoute("/groups/$groupId")({
   component: GroupDetailsPage,
 });
 
-// Mock data - in a real app, this would be fetched based on groupId
-const groupData = {
-  id: "1",
-  name: "Household Expenses",
-  description: "Shared home expenses",
-  type: "home",
-  inviteCode: "HH-ABC123",
-  members: [
-    { id: "1", name: "John Doe", avatar: "JD", email: "john@example.com", balance: -125.5 },
-    { id: "2", name: "Jane Smith", avatar: "JS", email: "jane@example.com", balance: 125.5 },
-  ],
-  transactions: [
-    {
-      id: "1",
-      description: "Electricity Bill",
-      amount: 120.0,
-      paidBy: { id: "2", name: "Jane Smith", avatar: "JS" },
-      date: new Date(),
-      splitBetween: ["1", "2"],
-    },
-    {
-      id: "2",
-      description: "Internet Bill",
-      amount: 50.0,
-      paidBy: { id: "1", name: "John Doe", avatar: "JD" },
-      date: new Date(Date.now() - 86400000 * 3),
-      splitBetween: ["1", "2"],
-    },
-    {
-      id: "3",
-      description: "Groceries",
-      amount: 85.0,
-      paidBy: { id: "2", name: "Jane Smith", avatar: "JS" },
-      date: new Date(Date.now() - 86400000 * 5),
-      splitBetween: ["1", "2"],
-    },
-    {
-      id: "4",
-      description: "Water Bill",
-      amount: 45.0,
-      paidBy: { id: "1", name: "John Doe", avatar: "JD" },
-      date: new Date(Date.now() - 86400000 * 10),
-      splitBetween: ["1", "2"],
-    },
-  ],
-  totalExpenses: 2450.0,
-};
+// Empty state for transactions
+function EmptyTransactionsState({ onAdd }: { onAdd: () => void }) {
+  return (
+    <div className="flex flex-col items-center justify-center py-12 text-center">
+      <div className="flex h-16 w-16 items-center justify-center rounded-full bg-muted mb-4">
+        <Receipt className="h-8 w-8 text-muted-foreground" />
+      </div>
+      <h3 className="text-lg font-semibold">No expenses yet</h3>
+      <p className="text-sm text-muted-foreground mt-1 max-w-sm">
+        Add your first expense to start tracking spending in this group.
+      </p>
+      <Button className="mt-4" onClick={onAdd}>
+        <Plus className="mr-2 h-4 w-4" />
+        Add Expense
+      </Button>
+    </div>
+  );
+}
+
+// Empty state for members
+function EmptyMembersState({ onInvite }: { onInvite: () => void }) {
+  return (
+    <div className="flex flex-col items-center justify-center py-8 text-center">
+      <div className="flex h-12 w-12 items-center justify-center rounded-full bg-muted mb-3">
+        <Users className="h-6 w-6 text-muted-foreground" />
+      </div>
+      <h3 className="text-base font-semibold">Just you so far</h3>
+      <p className="text-sm text-muted-foreground mt-1">
+        Invite friends to split expenses.
+      </p>
+      <Button variant="outline" size="sm" className="mt-3" onClick={onInvite}>
+        <UserPlus className="mr-2 h-4 w-4" />
+        Invite Members
+      </Button>
+    </div>
+  );
+}
 
 function GroupDetailsPage() {
   const { groupId: _groupId } = Route.useParams();
@@ -92,10 +83,38 @@ function GroupDetailsPage() {
     amount: "",
   });
 
-  // In a real app, you would fetch group data based on groupId
-  const group = groupData;
+  // TODO: Replace with actual API data fetched based on groupId
+  const group: {
+    id: string;
+    name: string;
+    description: string;
+    type: string;
+    inviteCode: string;
+    members: Array<{ id: string; name: string; avatar: string; email: string; balance: number }>;
+    transactions: Array<{
+      id: string;
+      description: string;
+      amount: number;
+      paidBy: { id: string; name: string; avatar: string };
+      date: Date;
+      splitBetween: string[];
+    }>;
+    totalExpenses: number;
+  } = {
+    id: "",
+    name: "Loading...",
+    description: "",
+    type: "other",
+    inviteCode: "",
+    members: [],
+    transactions: [],
+    totalExpenses: 0,
+  };
 
-  const currentUser = group.members.find((m) => m.id === "1"); // Mock current user
+  const hasTransactions = group.transactions.length > 0;
+  const hasMembers = group.members.length > 0;
+
+  const currentUser = group.members.find((m) => m.id === "1"); // TODO: Get from auth context
 
   const handleCopyInviteCode = async () => {
     await navigator.clipboard.writeText(group.inviteCode);
@@ -316,10 +335,8 @@ function GroupDetailsPage() {
             <CardDescription>Recent expenses in this group</CardDescription>
           </CardHeader>
           <CardContent>
-            {group.transactions.length === 0 ? (
-              <div className="flex flex-col items-center justify-center py-12 text-center">
-                <p className="text-muted-foreground">No transactions yet</p>
-              </div>
+            {!hasTransactions ? (
+              <EmptyTransactionsState onAdd={() => setIsAddExpenseDialogOpen(true)} />
             ) : (
               <div className="space-y-4">
                 {group.transactions.map((transaction) => {
@@ -374,36 +391,40 @@ function GroupDetailsPage() {
             <CardDescription>Group balances</CardDescription>
           </CardHeader>
           <CardContent>
-            <div className="space-y-4">
-              {group.members.map((member) => (
-                <div
-                  key={member.id}
-                  className="flex items-center justify-between"
-                >
-                  <div className="flex items-center gap-3">
-                    <div className="h-10 w-10 rounded-full bg-primary/10 flex items-center justify-center text-sm font-medium text-primary">
-                      {member.avatar}
-                    </div>
-                    <div>
-                      <p className="font-medium">{member.name}</p>
-                      <p className="text-xs text-muted-foreground">
-                        {member.email}
-                      </p>
-                    </div>
-                  </div>
+            {!hasMembers ? (
+              <EmptyMembersState onInvite={() => setIsInviteDialogOpen(true)} />
+            ) : (
+              <div className="space-y-4">
+                {group.members.map((member) => (
                   <div
-                    className={cn(
-                      "font-semibold",
-                      member.balance >= 0 ? "text-green-600" : "text-red-600"
-                    )}
+                    key={member.id}
+                    className="flex items-center justify-between"
                   >
-                    {member.balance >= 0
-                      ? `+${formatCurrency(member.balance)}`
-                      : formatCurrency(member.balance)}
+                    <div className="flex items-center gap-3">
+                      <div className="h-10 w-10 rounded-full bg-primary/10 flex items-center justify-center text-sm font-medium text-primary">
+                        {member.avatar}
+                      </div>
+                      <div>
+                        <p className="font-medium">{member.name}</p>
+                        <p className="text-xs text-muted-foreground">
+                          {member.email}
+                        </p>
+                      </div>
+                    </div>
+                    <div
+                      className={cn(
+                        "font-semibold",
+                        member.balance >= 0 ? "text-green-600" : "text-red-600"
+                      )}
+                    >
+                      {member.balance >= 0
+                        ? `+${formatCurrency(member.balance)}`
+                        : formatCurrency(member.balance)}
+                    </div>
                   </div>
-                </div>
-              ))}
-            </div>
+                ))}
+              </div>
+            )}
           </CardContent>
         </Card>
       </div>
