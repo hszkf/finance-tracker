@@ -94,7 +94,7 @@ export const handlers = [
   }),
 
   http.post(`${API_URL}/accounts`, async ({ request }) => {
-    const body = await request.json();
+    const body = await request.json() as Record<string, unknown>;
     return HttpResponse.json({
       data: { id: "new-account-id", ...body },
     });
@@ -114,7 +114,7 @@ export const handlers = [
   }),
 
   http.post(`${API_URL}/categories`, async ({ request }) => {
-    const body = await request.json();
+    const body = await request.json() as Record<string, unknown>;
     return HttpResponse.json({
       data: { id: "new-category-id", ...body },
     });
@@ -131,7 +131,7 @@ export const handlers = [
   }),
 
   http.post(`${API_URL}/transactions`, async ({ request }) => {
-    const body = await request.json();
+    const body = await request.json() as Record<string, unknown>;
     return HttpResponse.json({
       data: { id: "new-tx-id", ...body, createdAt: new Date().toISOString() },
     });
@@ -146,7 +146,7 @@ export const handlers = [
   }),
 
   http.put(`${API_URL}/transactions/:id`, async ({ params, request }) => {
-    const body = await request.json();
+    const body = await request.json() as Record<string, unknown>;
     return HttpResponse.json({
       data: { id: params.id, ...body, updatedAt: new Date().toISOString() },
     });
@@ -162,7 +162,7 @@ export const handlers = [
   }),
 
   http.post(`${API_URL}/groups`, async ({ request }) => {
-    const body = await request.json();
+    const body = await request.json() as Record<string, unknown>;
     return HttpResponse.json({
       data: { id: "new-group-id", ...body, isPersonal: false },
     });
@@ -247,7 +247,7 @@ export const handlers = [
   }),
 
   http.put(`${API_URL}/preferences`, async ({ request }) => {
-    const body = await request.json();
+    const body = await request.json() as Record<string, unknown>;
     return HttpResponse.json({ data: body });
   }),
 ];

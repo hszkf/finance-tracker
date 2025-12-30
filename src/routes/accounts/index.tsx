@@ -7,8 +7,6 @@ import {
   PiggyBank,
   Wallet,
   MoreVertical,
-  Pencil,
-  Trash2,
   TrendingUp,
   TrendingDown,
 } from "lucide-react";

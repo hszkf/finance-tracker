@@ -4,7 +4,6 @@ import {
   ArrowLeft,
   Plus,
   UserPlus,
-  Settings,
   ArrowUpRight,
   ArrowDownRight,
   Copy,
@@ -84,7 +83,7 @@ const groupData = {
 };
 
 function GroupDetailsPage() {
-  const { groupId } = Route.useParams();
+  const { groupId: _groupId } = Route.useParams();
   const [isInviteDialogOpen, setIsInviteDialogOpen] = useState(false);
   const [isAddExpenseDialogOpen, setIsAddExpenseDialogOpen] = useState(false);
   const [copied, setCopied] = useState(false);

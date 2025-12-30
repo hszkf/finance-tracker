@@ -2,8 +2,6 @@ import { useState } from "react";
 import { createFileRoute } from "@tanstack/react-router";
 import {
   Plus,
-  Pencil,
-  Trash2,
   ShoppingCart,
   Utensils,
   Car,

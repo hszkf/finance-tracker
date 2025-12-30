@@ -4,7 +4,6 @@ import {
   Receipt,
   Wallet,
   PiggyBank,
-  BarChart3,
   Users,
   Settings,
   ChevronLeft,
